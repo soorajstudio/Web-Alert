@@ -39,24 +39,6 @@
 
 ---
 
-### 3. Eye Care & Screen Break Dashboard
-*Dedicated interval manager for 20m, 30m, 40m, or 45m screen breaks with center-screen alerts:*
-
-<p align="center">
-  <img src="assets/screenshots/eyerest_dashboard.png" alt="Eye Care Dashboard" width="700" />
-</p>
-
----
-
-### 4. Alarm & Reminder Setup Dialog
-*Clean, modal configuration for schedule, custom chime sounds, and notification style selection:*
-
-<p align="center">
-  <img src="assets/screenshots/alarm_dialog.png" alt="Alarm Configuration Dialog" width="700" />
-</p>
-
----
-
 ## 🚀 Getting Started
 
 ### Prerequisites
