@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  padding: 26px;
+  font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #ffffff;
+}
+
+#stage {
+  position: relative;
+  width: 100%;
+}
+
+#card {
+  opacity: 0;
+  position: relative;
+  transform-origin: top center;
+  transition: box-shadow 0.25s ease;
+  z-index: 2;
+}
+
+/* Spider-Man Hanging below */
+#spiderman-box {
+  position: absolute;
+  right: 42px;
+  top: calc(100% + 2px);
+  width: 125px;
+  height: 125px;
+  pointer-events: none;
+  z-index: 1;
+  transform-origin: top center;
+  opacity: 0;
+}
+
+.web-thread {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.35));
+  box-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+  border-radius: 1px;
+}
+
+#spiderman-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.75));
+  animation: spiderSway 3.6s ease-in-out infinite alternate;
+  transform-origin: top center;
+}
+
+@keyframes spiderSway {
+  0% { transform: rotate(-3.5deg); }
+  50% { transform: rotate(1deg); }
+  100% { transform: rotate(3.5deg); }
+}
+
+/* ==========================================================================
+   STYLE 1: CAPSULE PILL
+   ========================================================================== */
+.card-capsule {
+  background: linear-gradient(135deg, rgba(38, 25, 20, 0.94) 0%, rgba(20, 13, 10, 0.97) 100%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1.6px solid rgba(249, 115, 22, 0.45);
+  border-radius: 28px;
+  box-shadow:
+    0 18px 45px -10px rgba(0, 0, 0, 0.75),
+    0 0 28px rgba(249, 115, 22, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  padding: 12px 18px 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: capsuleBorderPulse 2.4s infinite ease-in-out;
+}
+
+@keyframes capsuleBorderPulse {
+  0%, 100% {
+    box-shadow: 0 18px 45px -10px rgba(0,0,0,0.75), 0 0 22px rgba(249, 115, 22, 0.22), inset 0 1px 0 rgba(255,255,255,0.2);
+    border-color: rgba(249, 115, 22, 0.45);
+  }
+  50% {
+    box-shadow: 0 18px 45px -10px rgba(0,0,0,0.75), 0 0 38px rgba(249, 115, 22, 0.42), inset 0 1px 0 rgba(255,255,255,0.3);
+    border-color: rgba(249, 115, 22, 0.8);
+  }
+}
+
+.capsule-icon-wrap {
+  position: relative;
+  flex: none;
+}
+.capsule-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%);
+  box-shadow: 0 4px 16px rgba(234, 88, 12, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  display: grid;
+  place-items: center;
+}
+.capsule-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.capsule-icon.shake svg {
+  animation: bellShake 1.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.capsule-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.capsule-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.capsule-desc {
+  font-size: 12px;
+  color: #fdba74;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.capsule-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.capsule-btn-dismiss {
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.42);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+.capsule-btn-dismiss:hover {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.6);
+  transform: translateY(-1px);
+}
+.capsule-btn-dismiss:active {
+  transform: scale(0.96);
+}
+
+.capsule-btn-snooze {
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fed7aa;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.capsule-btn-snooze:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.capsule-close {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+.capsule-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   STYLE 2: FLOATING ISLAND
+   ========================================================================== */
+.card-island {
+  margin-top: 24px;
+  background: linear-gradient(145deg, rgba(34, 32, 26, 0.94) 0%, rgba(20, 19, 15, 0.97) 100%);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 2px solid rgba(250, 204, 21, 0.38);
+  border-radius: 26px;
+  box-shadow:
+    0 22px 55px -10px rgba(0, 0, 0, 0.8),
+    0 0 32px rgba(250, 204, 21, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  padding: 30px 22px 18px 22px;
+  text-align: center;
+  position: relative;
+}
+
+.island-bell-badge {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fef08a 0%, #eab308 100%);
+  border: 3.5px solid #141310;
+  box-shadow: 0 6px 20px rgba(234, 179, 8, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  display: grid;
+  place-items: center;
+  z-index: 5;
+}
+.island-bell-badge svg {
+  width: 24px;
+  height: 24px;
+  fill: #78350f;
+  stroke: #78350f;
+  stroke-width: 0.8;
+}
+.island-bell-badge.shake svg {
+  animation: bellShake 1.2s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.island-count-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid #141310;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.6);
+  animation: popBadge 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes popBadge {
+  0% { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+
+.island-title {
+  font-size: 17px;
+  font-weight: 750;
+  color: #fef08a;
+  letter-spacing: -0.01em;
+  margin-top: 2px;
+  word-break: break-word;
+}
+.island-desc {
+  font-size: 13px;
+  color: #e4e4e7;
+  line-height: 1.45;
+  margin-top: 5px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.island-time {
+  font-size: 11.5px;
+  color: #a1a1aa;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.island-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+.island-btn {
+  flex: 1;
+  height: 38px;
+  border-radius: 9999px;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+.island-btn-snooze {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.4);
+}
+.island-btn-snooze:hover {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  box-shadow: 0 6px 18px rgba(13, 148, 136, 0.55);
+  transform: translateY(-1px);
+}
+.island-btn-dismiss {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4);
+}
+.island-btn-dismiss:hover {
+  background: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%);
+  box-shadow: 0 6px 18px rgba(244, 63, 94, 0.55);
+  transform: translateY(-1px);
+}
+
+.island-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+.island-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.island-tail {
+  position: absolute;
+  bottom: -8px;
+  right: 36px;
+  width: 16px;
+  height: 16px;
+  background: #141310;
+  border-right: 2px solid rgba(250, 204, 21, 0.38);
+  border-bottom: 2px solid rgba(250, 204, 21, 0.38);
+  transform: rotate(45deg);
+  border-bottom-right-radius: 4px;
+}
+
+/* Common shake keyframe */
+@keyframes bellShake {
+  0% { transform: rotate(0); }
+  15% { transform: rotate(16deg); }
+  30% { transform: rotate(-16deg); }
+  45% { transform: rotate(12deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+  85% { transform: rotate(-2deg); }
+  100% { transform: rotate(0); }
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="card"></div>
+  <div id="spiderman-box">
+    <div class="web-thread"></div>
+    <img src="assets/spiderman.gif" id="spiderman-img" alt="Spider-Man" />
+  </div>
+</div>
+
+<script src="sounds.js"></script>
+<script>
+const card = document.getElementById('card');
+const spidermanBox = document.getElementById('spiderman-box');
+let cfg = {}, stop = () => {}, leaving = false;
+
+const fmt = t => {
+  if (!t) {
+    const n = new Date();
+    const h = n.getHours(), m = n.getMinutes();
+    return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  }
+  const [h, m] = t.split(':').map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+};
+
+function getIconSvg(d) {
+  if (d.isEyeRest) {
+    return `<svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  }
+  return `<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
+}
+
+function renderCapsule(d) {
+  card.className = 'card-capsule';
+  const snoozeMin = d.snoozeMin || (d.alarmId ? 10 : 0);
+  const snoozeLabel = d.isEyeRest ? `Rest ${snoozeMin}m` : `Snooze ${snoozeMin}m`;
+  card.innerHTML = `
+    <div class="capsule-icon-wrap">
+      <div class="capsule-icon shake">
+        ${getIconSvg(d)}
+      </div>
+    </div>
+    <div class="capsule-content">
+      <div class="capsule-title">${d.title || (d.isEyeRest ? 'Eye Rest Reminder' : 'Alarm')}</div>
+      <div class="capsule-desc">${d.description || (d.time ? fmt(d.time) : 'Time to rest your eyes')}</div>
+    </div>
+    <div class="capsule-actions">
+      ${snoozeMin ? `<button class="capsule-btn-snooze" id="act-snooze">${snoozeLabel}</button>` : ''}
+      <button class="capsule-btn-dismiss" id="act-dismiss">${d.isEyeRest ? "I'm Done" : 'Dismiss'}</button>
+      <button class="capsule-close" id="act-close" title="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `;
+}
+
+function renderIsland(d) {
+  card.className = 'card-island';
+  const snoozeMin = d.snoozeMin || (d.alarmId ? 10 : 0);
+  const snoozeLabel = d.isEyeRest ? `Rest ${snoozeMin}m` : `Snooze ${snoozeMin}m`;
+  card.innerHTML = `
+    <div class="island-bell-badge shake">
+      ${getIconSvg(d)}
+      <div class="island-count-dot">1</div>
+    </div>
+    <button class="island-close" id="act-close" title="Close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="island-title">${d.title || (d.isEyeRest ? 'Eye Rest Reminder' : 'Notification')}</div>
+    <div class="island-desc">${d.description || (d.isEyeRest ? 'Close your eyes for 5 minutes and relax.' : 'Reminder notification')}</div>
+    <div class="island-time">${fmt(d.time)}</div>
+    <div class="island-actions">
+      ${snoozeMin ? `<button class="island-btn island-btn-snooze" id="act-snooze">${snoozeLabel}</button>` : ''}
+      <button class="island-btn island-btn-dismiss" id="act-dismiss">${d.isEyeRest ? "I'm Done" : 'Dismiss'}</button>
+    </div>
+    <div class="island-tail"></div>
+  `;
+}
+
+
+api.onToast(d => {
+  cfg = d || {};
+  const style = d.style || 'capsule';
+
+  if (style === 'island') {
+    renderIsland(d);
+  } else {
+    renderCapsule(d);
+  }
+
+  // Hook actions
+  const btnClose = document.getElementById('act-close');
+  const btnSnooze = document.getElementById('act-snooze');
+  const btnDismiss = document.getElementById('act-dismiss');
+
+  if (btnClose) btnClose.onclick = () => { stop(); api.action('dismiss'); };
+  if (btnSnooze) btnSnooze.onclick = () => { stop(); api.action('snooze'); };
+  if (btnDismiss) btnDismiss.onclick = () => { stop(); api.action('dismiss'); };
+
+  // Adjust total height for Spider-Man + card
+  const spidermanExtra = 135;
+  api.size(card.offsetHeight + spidermanExtra + (style === 'island' ? 28 : 0));
+});
+
+api.onPlay(() => {
+  card.style.opacity = '1';
+  spidermanBox.style.opacity = '1';
+  const style = cfg.style || 'capsule';
+
+  // Spider-Man entrance drop
+  spidermanBox.animate([
+    { opacity: 0, transform: 'translateY(-14px) scale(0.9)' },
+    { opacity: 1, transform: 'translateY(3px) scale(1.02)', offset: 0.7 },
+    { opacity: 1, transform: 'translateY(0) scale(1)' }
+  ], {
+    duration: 500,
+    easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+    fill: 'both'
+  });
+
+  if (cfg.position === 'center') {
+    // Center popup elastic scale bounce
+    card.animate([
+      { opacity: 0, transform: 'scale(0.82)' },
+      { opacity: 1, transform: 'scale(1.03)', offset: 0.7 },
+      { opacity: 1, transform: 'scale(1)' }
+    ], {
+      duration: 380,
+      easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      fill: 'both'
+    });
+  } else if (style === 'island') {
+    card.animate([
+      { opacity: 0, transform: 'translateY(-42px) scale(0.82)' },
+      { opacity: 1, transform: 'translateY(6px) scale(1.03)', offset: 0.65 },
+      { opacity: 1, transform: 'translateY(0) scale(1)' }
+    ], {
+      duration: 450,
+      easing: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      fill: 'both'
+    });
+  } else {
+    // capsule (default)
+    card.animate([
+      { opacity: 0, transform: 'translateY(-36px) scale(0.9)' },
+      { opacity: 1, transform: 'translateY(4px) scale(1.02)', offset: 0.7 },
+      { opacity: 1, transform: 'translateY(0) scale(1)' }
+    ], {
+      duration: 380,
+      easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      fill: 'both'
+    });
+  }
+
+  if (cfg.sound && cfg.sound !== 'none') {
+    stop = Sounds.ring(cfg.sound, { loop: !!cfg.alarmId, maxMs: 120000 });
+  }
+});
+
+function leave() {
+  if (leaving) return;
+  leaving = true;
+  stop();
+
+  spidermanBox.animate([
+    { opacity: 1, transform: 'scale(1)' },
+    { opacity: 0, transform: 'translateY(-16px) scale(0.85)' }
+  ], {
+    duration: 200,
+    easing: 'cubic-bezier(0.4, 0, 1, 1)',
+    fill: 'forwards'
+  });
+
+  if (cfg.position === 'center') {
+    card.animate([
+      { opacity: 1, transform: 'scale(1)' },
+      { opacity: 0, transform: 'scale(0.84)' }
+    ], {
+      duration: 200,
+      easing: 'cubic-bezier(0.4, 0, 1, 1)',
+      fill: 'forwards'
+    }).onfinish = () => api.close();
+  } else {
+    card.animate([
+      { opacity: 1, transform: 'translateY(0) scale(1)' },
+      { opacity: 0, transform: 'translateY(-24px) scale(0.92)' }
+    ], {
+      duration: 220,
+      easing: 'cubic-bezier(0.4, 0, 1, 1)',
+      fill: 'forwards'
+    }).onfinish = () => api.close();
+  }
+}
+
+api.onDismiss(leave);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    stop();
+    api.action('dismiss');
+  }
+});
+</script>
+</body>
+</html>

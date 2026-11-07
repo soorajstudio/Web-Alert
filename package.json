@@ -1,0 +1,17 @@
+{
+  "name": "popnotify",
+  "version": "2.0.0",
+  "description": "Alarm and reminder popups for Windows",
+  "author": "PopNotify",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "build": "electron-builder --win --x64 --publish never" },
+  "devDependencies": { "electron": "^33.0.0", "electron-builder": "^25.0.0" },
+  "build": {
+    "appId": "com.popnotify.app",
+    "productName": "PopNotify",
+    "artifactName": "PopNotify-Setup-${version}.exe",
+    "win": { "target": "nsis", "icon": "assets/icon.png" },
+    "nsis": { "oneClick": true, "perMachine": false, "runAfterFinish": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
+    "files": ["main.js", "preload.js", "index.html", "toast.html", "sounds.js", "assets/**"]
+  }
+}

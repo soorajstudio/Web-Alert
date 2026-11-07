@@ -1,0 +1,550 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PopNotify</title><style>
+:root{--bg:#2b2826;--card:rgba(255,255,255,.065);--card-h:rgba(255,255,255,.1);--tx:#fff;--sub:#c4c0bd;--ac:#4cc2ff;--line:rgba(255,255,255,.13)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:'Segoe UI Variable Text','Segoe UI',system-ui,sans-serif;user-select:none;overflow-x:hidden}
+#drag{position:fixed;top:0;left:0;right:140px;height:36px;-webkit-app-region:drag}
+main{padding:56px 66px 110px}
+h1{display:none}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+.card{position:relative;background:var(--card);border-radius:8px;padding:10px 18px 16px;cursor:pointer;transition:background .15s;min-width:0}
+.card:hover{background:var(--card-h)}
+.time{font-family:'Segoe UI Variable Display','Segoe UI',sans-serif;font-size:64px;font-weight:600;line-height:1.1;letter-spacing:-1px}
+.time small{font-size:18px;font-weight:500;letter-spacing:0;margin-left:6px;color:var(--sub)}
+.eta{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--sub);margin-top:2px;height:20px}
+.eta svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.name{font-size:20px;font-weight:600;margin-top:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.desc{font-size:13px;color:var(--sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.days{display:flex;gap:10px;margin-top:12px;font-size:14px}
+.days span{width:34px;height:34px;display:grid;place-items:center;border-radius:50%;color:var(--sub)}
+.days span.on{background:var(--ac);color:#000}
+.card.off .time,.card.off .name,.card.off .days span.on{opacity:.45}
+.tg{position:absolute;top:16px;right:18px;width:50px;height:24px;border-radius:12px;border:1px solid #cfcbc8;background:transparent;cursor:pointer;padding:0}
+.tg::after{content:'';position:absolute;top:5px;left:5px;width:12px;height:12px;border-radius:50%;background:#e8e4e1;transition:.15s}
+.tg.on{background:var(--ac);border-color:var(--ac)}
+.tg.on::after{left:31px;background:#000}
+.del{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:6px;border:0;background:rgba(255,80,80,.18);color:#ff8a8a;cursor:pointer;display:grid;place-items:center}
+.del:hover{background:rgba(255,80,80,.3)}
+.del svg,.fab svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.empty{grid-column:1/-1;text-align:center;color:var(--sub);margin-top:22vh;line-height:1.7}
+.empty b{display:block;font-size:20px;color:var(--tx);font-weight:600}
+.fabs{position:fixed;right:24px;bottom:24px;display:flex;background:#383533;border:1px solid var(--line);border-radius:8px;padding:4px;gap:2px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.fab{width:44px;height:40px;border:0;border-radius:6px;background:transparent;color:#fff;cursor:pointer;display:grid;place-items:center}
+.fab:hover{background:rgba(255,255,255,.1)}.fab.act{background:var(--ac);color:#000}
+/* dialog */
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:10}
+#ov.show{display:flex}
+.dlg{width:440px;max-width:94vw;max-height:94vh;overflow:auto;background:#322f2d;border:1px solid var(--line);border-radius:10px;padding:22px 24px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.dlg h2{margin:0 0 16px;font-size:18px;font-weight:600}
+.tp{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px}
+.col{display:flex;flex-direction:column;align-items:center;gap:2px}
+.col button{width:60px;height:22px;border:0;border-radius:4px;background:transparent;color:var(--sub);cursor:pointer;font-size:11px}
+.col button:hover{background:rgba(255,255,255,.1);color:#fff}
+.col input{width:78px;height:62px;text-align:center;font-size:42px;font-weight:600;background:rgba(255,255,255,.07);color:#fff;border:1px solid transparent;border-bottom:2px solid var(--ac);border-radius:6px;font-family:inherit;outline:none}
+.col input:focus{background:rgba(255,255,255,.12)}
+.colon{font-size:38px;font-weight:600;margin-top:-2px}
+.seg{display:flex;flex-direction:column;gap:6px;margin-left:8px}
+.seg button{width:58px;height:34px;border-radius:6px;border:1px solid var(--line);background:transparent;color:#fff;cursor:pointer;font:inherit;font-size:14px}
+.seg button.on{background:var(--ac);border-color:var(--ac);color:#000;font-weight:600}
+label.f{display:block;font-size:12px;color:var(--sub);margin:12px 0 5px}
+.in{width:100%;background:rgba(255,255,255,.07);color:#fff;border:1px solid var(--line);border-bottom:2px solid rgba(255,255,255,.35);border-radius:6px;padding:8px 10px;font:inherit;font-size:14px;outline:none;resize:none;user-select:text}
+.in:focus{border-bottom-color:var(--ac);background:rgba(255,255,255,.1)}
+select.in option{background:#322f2d}
+.rep{display:flex;gap:8px;flex-wrap:wrap}
+.rep button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--sub);cursor:pointer;font:inherit;font-size:13px}
+.rep button.on{background:var(--ac);border-color:var(--ac);color:#000}
+.hint{font-size:12px;color:var(--sub);margin-top:6px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.pv{flex:none!important;width:42px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:grid;place-items:center}
+.pv svg{width:16px;height:16px;fill:currentColor}
+.foot{display:flex;gap:8px;margin-top:22px;align-items:center}
+.foot .sp{flex:1}
+.btn{height:36px;padding:0 18px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:14px;cursor:pointer}
+.btn:hover{background:rgba(255,255,255,.14)}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#000;font-weight:600}.btn.p:hover{background:#6fcfff}
+.btn.d{color:#ff8a8a;border-color:rgba(255,100,100,.35)}
+.err{color:#ff8a8a;font-size:12px;margin-top:4px;height:14px}
+.style-picker{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.style-opt{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer;transition:all .15s ease;user-select:none}
+.style-opt:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25)}
+.style-opt.active{border-color:var(--ac);background:rgba(76,194,255,.12);box-shadow:0 0 10px rgba(76,194,255,.2)}
+.style-opt-icon{font-size:18px;flex:none}
+.style-opt-text{flex:1;min-width:0}
+.style-opt-title{font-size:13px;font-weight:600;color:#fff}
+.style-opt-desc{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.style-badge{display:inline-block;font-size:11px;font-weight:600;color:var(--ac);background:rgba(76,194,255,.12);border:1px solid rgba(76,194,255,.25);border-radius:12px;padding:2px 7px;margin-top:8px}
+
+/* Top Navigation Bar */
+.top-nav{position:fixed;top:0;left:0;right:140px;height:46px;display:flex;align-items:center;padding:0 24px;gap:24px;background:#242220;border-bottom:1px solid var(--line);z-index:9; -webkit-app-region:drag}
+.app-brand{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#fff}
+.app-brand svg{color:var(--ac);width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+.nav-tabs{display:flex;gap:6px; -webkit-app-region:no-drag}
+.nav-tab{height:32px;padding:0 14px;border-radius:6px;border:0;background:transparent;color:var(--sub);font:inherit;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s ease}
+.nav-tab:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-tab.active{background:rgba(76,194,255,.16);color:var(--ac)}
+.tab-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;display:none}
+.tab-dot.show{display:inline-block}
+
+/* Eye Rest Section */
+#sec-alarms{display:block}
+#sec-eyerest{display:none;max-width:720px;margin:0 auto}
+.er-hero{background:linear-gradient(135deg,rgba(56,189,248,.12) 0%,rgba(35,33,31,.85) 100%);border:1px solid rgba(56,189,248,.25);border-radius:14px;padding:20px 24px;display:flex;align-items:center;gap:18px;margin-bottom:20px}
+#er-master-tg{position:relative;top:auto;right:auto;flex:none}
+.er-hero-icon{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#38bdf8 0%,#0284c7 100%);display:grid;place-items:center;box-shadow:0 6px 18px rgba(14,165,233,.4);flex:none}
+.er-hero-icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.er-hero-info{flex:1;min-width:0}
+.er-hero-title{font-size:18px;font-weight:700;color:#fff}
+.er-hero-desc{font-size:13px;color:var(--sub);margin-top:2px;line-height:1.4}
+.er-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:2px 10px;border-radius:16px;margin-top:8px}
+.er-badge.on{background:rgba(74,222,128,.15);color:#4ade80;border:1px solid rgba(74,222,128,.3)}
+.er-badge.off{background:rgba(255,255,255,.07);color:var(--sub);border:1px solid var(--line)}
+.er-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 24px;margin-bottom:16px}
+.er-group{margin-bottom:18px}
+.er-group:last-child{margin-bottom:0}
+.er-label{font-size:12.5px;color:var(--sub);margin-bottom:7px;display:block;font-weight:600}
+.chip-row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--sub);font:inherit;font-size:13px;cursor:pointer;transition:all .15s}
+.chip:hover{background:rgba(255,255,255,.12);color:#fff}
+.chip.active{background:var(--ac);border-color:var(--ac);color:#000;font-weight:700}
+.msg-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.msg-chip{padding:4px 9px;border-radius:5px;border:1px dashed var(--line);background:transparent;color:var(--sub);font:inherit;font-size:11.5px;cursor:pointer}
+.msg-chip:hover{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.3)}
+.pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pos-card{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.05);cursor:pointer;transition:all .15s}
+.pos-card:hover{background:rgba(255,255,255,.1)}
+.pos-card.active{border-color:var(--ac);background:rgba(76,194,255,.14);box-shadow:0 0 10px rgba(76,194,255,.2)}
+.pos-title{font-size:13px;font-weight:600;color:#fff}
+.pos-sub{font-size:11px;color:var(--sub)}
+.er-actions{display:flex;gap:10px;margin-top:22px;align-items:center}
+</style></head><body>
+<div class="top-nav">
+ <div class="app-brand">
+  <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+  <span>PopNotify</span>
+ </div>
+ <div class="nav-tabs">
+  <button class="nav-tab active" id="tab-al"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Alarms</span></button>
+  <button class="nav-tab" id="tab-er"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><span>Eye Rest & Breaks</span><span class="tab-dot" id="er-dot"></span></button>
+ </div>
+</div>
+<div id="drag" style="display:none"></div>
+<main style="padding-top:72px">
+ <div id="sec-alarms"><div id="grid"></div></div>
+
+ <div id="sec-eyerest">
+  <div class="er-hero">
+   <div class="er-hero-icon">
+    <svg viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+   </div>
+   <div class="er-hero-info">
+    <div class="er-hero-title">Eye Care & Screen Break Timer</div>
+    <div class="er-hero-desc">Take regular screen breaks to prevent eye strain and fatigue.</div>
+    <div class="er-badge off" id="er-status-badge">Timer Paused</div>
+   </div>
+   <div>
+    <button class="tg" id="er-master-tg" role="switch" aria-checked="false" title="Toggle timer"></button>
+   </div>
+  </div>
+
+  <div class="er-card">
+   <div class="er-group">
+    <label class="er-label">Work Interval (Remind me every)</label>
+    <div class="chip-row" id="er-work-chips">
+     <button class="chip" data-v="20">20 min (20-20-20)</button>
+     <button class="chip" data-v="30">30 min</button>
+     <button class="chip" data-v="40">40 min</button>
+     <button class="chip active" data-v="45">45 min</button>
+     <button class="chip" data-v="60">60 min</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+     <span style="font-size:12px;color:var(--sub)">Custom minutes:</span>
+     <input class="in" id="er-work-custom" style="width:70px;padding:4px 8px;font-size:13px;text-align:center" type="number" min="1" max="180" value="45">
+    </div>
+   </div>
+
+   <div class="er-group">
+    <label class="er-label">Break Duration</label>
+    <div class="chip-row" id="er-break-chips">
+     <button class="chip" data-v="2">2 min</button>
+     <button class="chip" data-v="3">3 min</button>
+     <button class="chip active" data-v="5">5 min (Recommended)</button>
+     <button class="chip" data-v="10">10 min</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+     <span style="font-size:12px;color:var(--sub)">Custom minutes:</span>
+     <input class="in" id="er-break-custom" style="width:70px;padding:4px 8px;font-size:13px;text-align:center" type="number" min="1" max="30" value="5">
+    </div>
+   </div>
+
+   <div class="er-group">
+    <label class="er-label">Notification Message</label>
+    <input class="in" id="er-msg" maxlength="200" placeholder="e.g. Close your eyes for 5 minutes and relax." value="Close your eyes for 5 minutes and relax.">
+    <div class="msg-chips">
+     <button class="msg-chip" data-m="Close your eyes for 5 minutes and relax.">👁️ Close your eyes for 5 min</button>
+     <button class="msg-chip" data-m="Look at something 20 feet away for 20 seconds.">🔭 20-20-20 Distance Rest</button>
+     <button class="msg-chip" data-m="Stand up, stretch, and drink some water.">🚶 Stand up & drink water</button>
+     <button class="msg-chip" data-m="Deep breath break: Close your eyes and breathe slowly.">🧘 Mindful breathing</button>
+    </div>
+   </div>
+
+   <div class="er-group">
+    <label class="er-label">Screen Position</label>
+    <div class="pos-grid" id="er-pos-picker">
+     <div class="pos-card active" data-pos="center">
+      <span style="font-size:20px">🎯</span>
+      <div><div class="pos-title">Screen Center (Middle)</div><div class="pos-sub">Directly in middle of screen</div></div>
+     </div>
+     <div class="pos-card" data-pos="top">
+      <span style="font-size:20px">📌</span>
+      <div><div class="pos-title">Top Center</div><div class="pos-sub">Floats near top screen edge</div></div>
+     </div>
+    </div>
+   </div>
+
+   <div class="er-group">
+    <label class="er-label">Notification UI & Animation Style</label>
+    <div class="style-picker" id="er-st-picker">
+     <div class="style-opt active" data-st="capsule">
+      <span class="style-opt-icon">💊</span>
+      <div class="style-opt-text"><div class="style-opt-title">Capsule Pill</div><div class="style-opt-desc">Warm banner & fast spring</div></div>
+     </div>
+     <div class="style-opt" data-st="island">
+      <span class="style-opt-icon">🔔</span>
+      <div class="style-opt-text"><div class="style-opt-title">Floating Island</div><div class="style-opt-desc">Top bell & pop bounce</div></div>
+     </div>
+    </div>
+   </div>
+
+   <div class="er-group">
+    <label class="er-label">Sound Alert</label>
+    <div class="row" style="gap:6px">
+     <select class="in" id="er-sound"></select>
+     <button class="pv" id="er-pv" title="Preview sound"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+    </div>
+   </div>
+  </div>
+
+  <div class="er-actions">
+   <button class="btn p" id="er-save" style="padding:0 24px">Save Settings</button>
+   <button class="btn" id="er-test" style="border-color:var(--ac);color:var(--ac);font-weight:600">🎯 Test Middle Notification Now</button>
+   <span class="sp"></span>
+   <button class="btn d" id="er-reset">Reset Timer</button>
+  </div>
+ </div>
+</main>
+<div class="fabs">
+ <button class="fab" id="edit" title="Edit mode"></button>
+ <button class="fab" id="add" title="Add alarm"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+
+<div id="ov"><div class="dlg" role="dialog" aria-modal="true">
+ <h2 id="dt">Add new alarm</h2>
+ <div class="tp">
+  <div class="col"><button data-s="h" data-d="1">▲</button><input id="hh" maxlength="2" inputmode="numeric" aria-label="Hour"><button data-s="h" data-d="-1">▼</button></div>
+  <div class="colon">:</div>
+  <div class="col"><button data-s="m" data-d="1">▲</button><input id="mm" maxlength="2" inputmode="numeric" aria-label="Minute"><button data-s="m" data-d="-1">▼</button></div>
+  <div class="seg"><button id="am">AM</button><button id="pm">PM</button></div>
+ </div>
+ <label class="f" for="ti">Heading</label>
+ <input class="in" id="ti" maxlength="100" placeholder="e.g. Team meeting" autocomplete="off">
+ <div class="err" id="err"></div>
+ <label class="f" for="de" style="margin-top:2px">Description (optional)</label>
+ <textarea class="in" id="de" rows="2" maxlength="500" placeholder="Add more details"></textarea>
+ <label class="f">Repeat</label>
+ <div class="rep" id="rep"></div>
+ <div class="hint" id="rh"></div>
+ <div class="row">
+  <div><label class="f">Sound</label>
+   <div class="row" style="gap:6px"><select class="in" id="so"></select>
+   <button class="pv" id="pv" title="Preview sound"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button></div></div>
+  <div><label class="f">Snooze time</label>
+   <select class="in" id="sn"><option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option></select></div>
+ </div>
+ <label class="f" style="margin-top:10px">Notification UI & Animation Style</label>
+ <div class="style-picker" id="st-picker">
+  <div class="style-opt active" data-st="capsule">
+   <span class="style-opt-icon">💊</span>
+   <div class="style-opt-text"><div class="style-opt-title">Capsule Pill</div><div class="style-opt-desc">Warm banner & fast spring</div></div>
+  </div>
+  <div class="style-opt" data-st="island">
+   <span class="style-opt-icon">🔔</span>
+   <div class="style-opt-text"><div class="style-opt-title">Floating Island</div><div class="style-opt-desc">Top bell & pop bounce</div></div>
+  </div>
+ </div>
+ <div class="foot">
+  <button class="btn d" id="rm">Delete</button><button class="btn" id="ts">Test</button><span class="sp"></span>
+  <button class="btn" id="cn">Cancel</button><button class="btn p" id="sv">Save</button>
+ </div>
+</div></div>
+
+<script src="sounds.js"></script>
+<script>
+const DAYS=['M','Tu','We','Th','Fri','Sa','Su'], DN=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const $=id=>document.getElementById(id);
+const I={
+ bell:'<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
+ pen:'<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+ ok:'<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>',
+ trash:'<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
+};
+let alarms=[], editMode=false, draft=null, stopPreview=()=>{};
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+function nextFire(a){
+  if(a.snoozeUntil&&a.snoozeUntil>Date.now())return new Date(a.snoozeUntil);
+  const [h,m]=a.time.split(':').map(Number),now=new Date();
+  for(let d=0;d<=7;d++){
+    const t=new Date(now);t.setDate(now.getDate()+d);t.setHours(h,m,0,0);
+    if(t>now&&(!a.days.length||a.days.includes((t.getDay()+6)%7)))return t;
+  }
+}
+function eta(a){
+  const t=nextFire(a);if(!t)return '';
+  const tot=Math.ceil((t-new Date())/60000);
+  if(tot<1)return 'in less than a minute';
+  const p=[],d=Math.floor(tot/1440),h=Math.floor(tot%1440/60),m=tot%60;
+  if(d)p.push(d+(d>1?' days':' day'));if(h)p.push(h+(h>1?' hours':' hour'));if(m)p.push(m+(m>1?' minutes':' minute'));
+  return 'in '+p.slice(0,2).join(', ');
+}
+function render(){
+  const g=$('grid');
+  $('edit').innerHTML=editMode?I.ok:I.pen;$('edit').classList.toggle('act',editMode);
+  $('edit').title=editMode?'Done':'Edit mode';
+  if(!alarms.length){g.innerHTML='<div class="empty"><b>No alarms yet</b>Click the + button to add your first reminder.</div>';return}
+  const list=[...alarms].sort((a,b)=>a.time.localeCompare(b.time));
+  g.innerHTML=list.map(a=>{
+    const [h,m]=a.time.split(':').map(Number);
+    return `<div class="card ${a.enabled?'':'off'}" data-id="${a.id}">
+      <div class="time">${h%12||12}:${pad(m)}<small>${h<12?'AM':'PM'}</small></div>
+      <div class="eta">${a.enabled?`${I.bell}<span data-eta="${a.id}">${eta(a)}</span>`:''}</div>
+      <div class="name">${esc(a.title)}</div>
+      ${a.description?`<div class="desc">${esc(a.description)}</div>`:''}
+      <div class="days">${DAYS.map((d,i)=>`<span class="${a.days.includes(i)?'on':''}">${d}</span>`).join('')}</div>
+      <div><span class="style-badge">${a.style==='island'?'🔔 Floating Island':'💊 Capsule Pill'}</span></div>
+      ${editMode?`<button class="del" data-del="${a.id}" title="Delete">${I.trash}</button>`:`<button class="tg ${a.enabled?'on':''}" data-tg="${a.id}" role="switch" aria-checked="${a.enabled}" title="${a.enabled?'On':'Off'}"></button>`}
+    </div>`}).join('');
+}
+setInterval(()=>{document.querySelectorAll('[data-eta]').forEach(e=>{const a=alarms.find(x=>x.id===e.dataset.eta);if(a)e.textContent=eta(a)})},10000);
+$('grid').onclick=async e=>{
+  const tg=e.target.closest('[data-tg]'),del=e.target.closest('[data-del]'),card=e.target.closest('.card');
+  if(tg){e.stopPropagation();alarms=await api.toggleAlarm(tg.dataset.tg,!alarms.find(a=>a.id===tg.dataset.tg).enabled);render();return}
+  if(del){if(confirm('Delete this alarm?')){alarms=await api.removeAlarm(del.dataset.del);render()}return}
+  if(card)openDlg(alarms.find(a=>a.id===card.dataset.id));
+};
+$('edit').onclick=()=>{editMode=!editMode;render()};
+$('add').onclick=()=>openDlg(null);
+api.onAlarmsChanged(l=>{alarms=l;render()});
+
+/* ---- dialog ---- */
+Sounds.list.forEach(s=>$('so').add(new Option(s.label,s.id)));
+$('rep').innerHTML=DAYS.map((d,i)=>`<button data-d="${i}" title="${DN[i]}">${d}</button>`).join('');
+function openDlg(a){
+  const now=new Date();
+  draft=a?{...a,days:[...a.days],style:a.style||'capsule'}:{id:null,time:pad(now.getHours())+':'+pad(now.getMinutes()),title:'',description:'',days:[],sound:'chime',snoozeMin:10,style:'capsule',enabled:true};
+  const h=+draft.time.slice(0,2);
+  draft.h=h%12||12;draft.m=+draft.time.slice(3);draft.pm=h>=12;
+  $('dt').textContent=a?'Edit alarm':'Add new alarm';
+  $('ti').value=draft.title;$('de').value=draft.description;$('so').value=draft.sound;$('sn').value=String(draft.snoozeMin);
+  $('rm').style.display=a?'':'none';$('err').textContent='';
+  syncTime();syncRep();syncStyle();$('ov').classList.add('show');setTimeout(()=>$('ti').focus(),30);
+}
+function syncStyle(){
+  document.querySelectorAll('#st-picker .style-opt').forEach(opt=>opt.classList.toggle('active',opt.dataset.st===(draft.style||'capsule')));
+}
+$('st-picker').onclick=e=>{
+  const opt=e.target.closest('.style-opt');if(!opt)return;
+  draft.style=opt.dataset.st;syncStyle();
+};
+function closeDlg(){stopPreview();$('ov').classList.remove('show')}
+function syncTime(){$('hh').value=draft.h;$('mm').value=pad(draft.m);$('am').classList.toggle('on',!draft.pm);$('pm').classList.toggle('on',draft.pm)}
+function syncRep(){
+  document.querySelectorAll('#rep button').forEach(b=>b.classList.toggle('on',draft.days.includes(+b.dataset.d)));
+  const d=draft.days;
+  $('rh').textContent=!d.length?'Ring once (next time this clock time arrives)':d.length===7?'Every day':d.length===5&&!d.includes(5)&&!d.includes(6)?'Weekdays':d.map(i=>DN[i].slice(0,3)).join(', ');
+}
+document.querySelectorAll('.col button').forEach(b=>b.onclick=()=>step(b.dataset.s,+b.dataset.d));
+function step(s,d){
+  if(s==='h')draft.h=((draft.h-1+d+12)%12)+1;else draft.m=(draft.m+d+60)%60;
+  syncTime();
+}
+['hh','mm'].forEach(id=>{
+  $(id).onwheel=e=>{e.preventDefault();step(id==='hh'?'h':'m',e.deltaY<0?1:-1)};
+  $(id).onfocus=()=>$(id).select();
+  $(id).oninput=()=>{$(id).value=$(id).value.replace(/\D/g,'')};
+  $(id).onblur=()=>{let v=parseInt($(id).value,10);if(isNaN(v))v=id==='hh'?draft.h:draft.m;
+    if(id==='hh')draft.h=Math.min(12,Math.max(1,v));else draft.m=Math.min(59,Math.max(0,v));syncTime()};
+});
+$('am').onclick=()=>{draft.pm=false;syncTime()};$('pm').onclick=()=>{draft.pm=true;syncTime()};
+$('rep').onclick=e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.d,x=draft.days.indexOf(i);x<0?draft.days.push(i):draft.days.splice(x,1);syncRep()};
+$('pv').onclick=()=>{stopPreview();stopPreview=Sounds.ring($('so').value,{maxMs:4000})};
+$('so').onchange=()=>$('pv').click();
+function collect(){
+  $('hh').blur();$('mm').blur();
+  const h24=(draft.h%12)+(draft.pm?12:0);
+  return {...draft,time:pad(h24)+':'+pad(draft.m),title:$('ti').value.trim(),description:$('de').value.trim(),sound:$('so').value,snoozeMin:+$('sn').value,style:draft.style||'capsule'};
+}
+$('sv').onclick=async()=>{
+  const a=collect();
+  if(!a.title){$('err').textContent='Please enter a heading.';$('ti').focus();return}
+  alarms=await api.saveAlarm(a);closeDlg();render();
+};
+$('ts').onclick=()=>{const a=collect();api.testToast({title:a.title||'Alarm heading',description:a.description||'Notification preview',time:a.time,sound:a.sound,snoozeMin:a.snoozeMin,style:a.style})};
+$('rm').onclick=async()=>{if(confirm('Delete this alarm?')){alarms=await api.removeAlarm(draft.id);closeDlg();render()}};
+$('cn').onclick=closeDlg;
+$('ov').onmousedown=e=>{if(e.target===$('ov'))closeDlg()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('ov').classList.contains('show'))closeDlg();
+  if(e.key==='Enter'&&$('ov').classList.contains('show')&&e.target.tagName!=='TEXTAREA'&&e.target.tagName!=='BUTTON')$('sv').click()});
+api.getAlarms().then(l=>{alarms=l;render()});
+
+/* ---------- Tab Switcher ---------- */
+let activeTab='alarms';
+function setTab(tab){
+  activeTab=tab;
+  $('tab-al').classList.toggle('active',tab==='alarms');
+  $('tab-er').classList.toggle('active',tab==='eyerest');
+  $('sec-alarms').style.display=tab==='alarms'?'block':'none';
+  $('sec-eyerest').style.display=tab==='eyerest'?'block':'none';
+  document.querySelector('.fabs').style.display=tab==='alarms'?'flex':'none';
+}
+$('tab-al').onclick=()=>setTab('alarms');
+$('tab-er').onclick=()=>setTab('eyerest');
+
+/* ---------- Eye Rest & Break Timer ---------- */
+Sounds.list.forEach(s=>$('er-sound').add(new Option(s.label,s.id)));
+let erConfig={enabled:false,workMin:45,breakMin:5,title:'Eye Rest Reminder',message:'Close your eyes for 5 minutes and relax.',sound:'gentle',style:'capsule',position:'center',nextFire:0};
+let erDraft={...erConfig};
+
+function updateErStatusBadge(){
+  const badge=$('er-status-badge'), dot=$('er-dot'), tg=$('er-master-tg');
+  const isEnabled=!!erConfig.enabled;
+  tg.classList.toggle('on',isEnabled);
+  tg.setAttribute('aria-checked',String(isEnabled));
+  dot.classList.toggle('show',isEnabled);
+
+  if(!isEnabled){
+    badge.className='er-badge off';
+    badge.textContent='Timer Paused';
+    return;
+  }
+  badge.className='er-badge on';
+  if(erConfig.nextFire&&erConfig.nextFire>Date.now()){
+    const totalSec=Math.max(0,Math.round((erConfig.nextFire-Date.now())/1000));
+    const m=Math.floor(totalSec/60), s=totalSec%60;
+    badge.textContent=`Active — Next eye rest in ${m}m ${s<10?'0':''}${s}s`;
+  } else {
+    badge.textContent='Active — Break due soon';
+  }
+}
+setInterval(updateErStatusBadge,1000);
+
+function syncEyeRestUI(){
+  $('er-msg').value=erDraft.message||'Close your eyes for 5 minutes and relax.';
+  $('er-sound').value=erDraft.sound||'gentle';
+  $('er-work-custom').value=erDraft.workMin||45;
+  $('er-break-custom').value=erDraft.breakMin||5;
+
+  document.querySelectorAll('#er-work-chips .chip').forEach(c=>{
+    c.classList.toggle('active',+c.dataset.v===erDraft.workMin);
+  });
+  document.querySelectorAll('#er-break-chips .chip').forEach(c=>{
+    c.classList.toggle('active',+c.dataset.v===erDraft.breakMin);
+  });
+  document.querySelectorAll('#er-pos-picker .pos-card').forEach(p=>{
+    p.classList.toggle('active',p.dataset.pos===(erDraft.position||'center'));
+  });
+  document.querySelectorAll('#er-st-picker .style-opt').forEach(s=>{
+    s.classList.toggle('active',s.dataset.st===(erDraft.style||'capsule'));
+  });
+  updateErStatusBadge();
+}
+
+$('er-work-chips').onclick=e=>{
+  const c=e.target.closest('.chip');if(!c)return;
+  erDraft.workMin=+c.dataset.v;
+  $('er-work-custom').value=erDraft.workMin;
+  syncEyeRestUI();
+};
+$('er-work-custom').oninput=e=>{
+  const v=Math.min(180,Math.max(1,parseInt(e.target.value,10)||45));
+  erDraft.workMin=v;
+  document.querySelectorAll('#er-work-chips .chip').forEach(c=>c.classList.toggle('active',+c.dataset.v===v));
+};
+
+$('er-break-chips').onclick=e=>{
+  const c=e.target.closest('.chip');if(!c)return;
+  erDraft.breakMin=+c.dataset.v;
+  $('er-break-custom').value=erDraft.breakMin;
+  syncEyeRestUI();
+};
+$('er-break-custom').oninput=e=>{
+  const v=Math.min(30,Math.max(1,parseInt(e.target.value,10)||5));
+  erDraft.breakMin=v;
+  document.querySelectorAll('#er-break-chips .chip').forEach(c=>c.classList.toggle('active',+c.dataset.v===v));
+};
+
+document.querySelectorAll('.msg-chip').forEach(btn=>{
+  btn.onclick=()=>{
+    $('er-msg').value=btn.dataset.m;
+    erDraft.message=btn.dataset.m;
+  };
+});
+
+$('er-pos-picker').onclick=e=>{
+  const p=e.target.closest('.pos-card');if(!p)return;
+  erDraft.position=p.dataset.pos;
+  syncEyeRestUI();
+};
+
+$('er-st-picker').onclick=e=>{
+  const s=e.target.closest('.style-opt');if(!s)return;
+  erDraft.style=s.dataset.st;
+  syncEyeRestUI();
+};
+
+let erStopSound=()=>{};
+$('er-pv').onclick=()=>{erStopSound();erStopSound=Sounds.ring($('er-sound').value,{maxMs:4000})};
+$('er-sound').onchange=()=>{erDraft.sound=$('er-sound').value;$('er-pv').click()};
+
+$('er-master-tg').onclick=async()=>{
+  const nextOn=!erConfig.enabled;
+  erConfig=await api.toggleEyeRest(nextOn);
+  erDraft.enabled=erConfig.enabled;
+  syncEyeRestUI();
+};
+
+$('er-save').onclick=async()=>{
+  erDraft.message=$('er-msg').value.trim()||'Close your eyes for 5 minutes and relax.';
+  erDraft.sound=$('er-sound').value;
+  erConfig=await api.saveEyeRest(erDraft);
+  syncEyeRestUI();
+  const btn=$('er-save'), old=btn.textContent;
+  btn.textContent='✓ Saved!';
+  setTimeout(()=>{btn.textContent=old},1500);
+};
+
+$('er-test').onclick=()=>{
+  api.testToast({
+    title:'Eye Rest Reminder',
+    description:$('er-msg').value.trim()||'Close your eyes for 5 minutes and relax.',
+    sound:$('er-sound').value,
+    style:erDraft.style||'capsule',
+    position:erDraft.position||'center',
+    snoozeMin:erDraft.breakMin||5,
+    isEyeRest:true
+  });
+};
+
+$('er-reset').onclick=async()=>{
+  erDraft.enabled=true;
+  erConfig=await api.saveEyeRest(erDraft);
+  syncEyeRestUI();
+};
+
+api.getEyeRest().then(cfg=>{
+  if(cfg){erConfig={...cfg};erDraft={...cfg};syncEyeRestUI();}
+});
+api.onEyeRestChanged(cfg=>{
+  if(cfg){erConfig={...cfg};updateErStatusBadge();}
+});
+</script></body></html>
