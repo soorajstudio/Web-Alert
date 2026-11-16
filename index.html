@@ -146,9 +146,11 @@ html, body {
 
 /* Main Layout */
 main {
-  padding: 50px 20px 14px;
-  max-width: 1040px;
+  padding: 56px clamp(16px, 3.5vw, 40px) 24px;
+  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 /* ==========================================================================
@@ -351,13 +353,14 @@ main {
 .er-chips-row {
   display: flex;
   gap: 6px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
 .er-chip {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 54px;
   text-align: center;
-  padding: 6px 4px;
+  padding: 6px 8px;
   border-radius: 8px;
   border: 1px solid var(--line);
   background: #ffffff;
@@ -660,6 +663,89 @@ main {
   gap: 7px;
   transition: all .15s ease;
 }
+
+/* ==========================================================================
+   Responsive Breakpoints & Fluid Scaling
+   ========================================================================== */
+@media (max-width: 960px) {
+  .er-grid-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .er-footer-bar {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 680px) {
+  main {
+    padding-top: 54px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .er-main-card {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+  .er-hero-container {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .er-hero-title {
+    font-size: 16px;
+  }
+  .er-hero-subtitle {
+    font-size: 11.5px;
+  }
+  .er-chips-row {
+    gap: 5px;
+  }
+  .er-chip {
+    flex: 1 1 calc(33.333% - 5px);
+    font-size: 11.5px;
+    padding: 6px 3px;
+  }
+  .er-choice-grid {
+    grid-template-columns: 1fr;
+  }
+  .er-footer-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .er-footer-bar button {
+    width: 100%;
+    justify-content: center;
+  }
+  #grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .card {
+    padding: 14px 16px;
+  }
+  .time {
+    font-size: 42px;
+  }
+  .top-nav {
+    padding: 0 12px;
+    gap: 8px;
+    right: 120px;
+  }
+  .app-brand span {
+    display: none;
+  }
+  .brand-sep {
+    display: none;
+  }
+  #btn-floating-tg {
+    padding: 0 8px;
+  }
+  .fabs {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
 .er-btn-reset:hover {
   background: #fef2f2;
   border-color: #ef4444;

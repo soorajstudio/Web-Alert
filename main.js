@@ -407,7 +407,7 @@ ipcMain.handle('floating:toggle', (_e, on) => {
 /* ---------- main window / tray ---------- */
 function createWindow(hidden) {
   mainWin = new BrowserWindow({
-    width: 1040, height: 680, minWidth: 900, minHeight: 600, show: false, title: 'PopNotify',
+    width: 1040, height: 680, minWidth: 480, minHeight: 500, show: false, title: 'PopNotify',
     backgroundColor: '#f1f5f9', autoHideMenuBar: true,
     titleBarStyle: 'hidden', titleBarOverlay: { color: '#f1f5f9', symbolColor: '#0f172a', height: 48 },
     icon: path.join(__dirname, 'assets', 'icon.png'),
