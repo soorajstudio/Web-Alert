@@ -20,7 +20,6 @@ let db = {
   },
   floatingShortcut: {
     enabled: true,
-    autoMinimize: true,
     x: null,
     y: null
   }
@@ -36,7 +35,7 @@ function loadDb() {
     db = { ...db, ...raw, eyeRest: { ...db.eyeRest, ...(raw.eyeRest || {}) } };
     if (db.eyeRest && db.eyeRest.style !== 'island') db.eyeRest.style = 'capsule';
     if (!db.floatingShortcut) {
-      db.floatingShortcut = { enabled: true, autoMinimize: true, x: null, y: null };
+      db.floatingShortcut = { enabled: true, x: null, y: null };
     }
     if (Array.isArray(db.alarms)) {
       db.alarms.forEach(a => { if (a.style !== 'island') a.style = 'capsule'; });
@@ -427,18 +426,6 @@ function createWindow(hidden) {
       db.hintShown = true; saveDb();
       showToast({ title: 'Still running in the background', description: 'Your alarms will keep working. Use the floating shortcut or tray icon to open.', sound: 'none' });
     }
-  });
-
-  // Auto-minimize when clicking outside the application
-  mainWin.on('blur', () => {
-    if (quitting) return;
-    if (!db.floatingShortcut || !db.floatingShortcut.enabled || !db.floatingShortcut.autoMinimize) return;
-    setTimeout(() => {
-      if (mainWin && !mainWin.isDestroyed() && !mainWin.isFocused() && mainWin.isVisible()) {
-        mainWin.hide();
-        showFloatingShortcut();
-      }
-    }, 150);
   });
 }
 function showMain() {
