@@ -17,5 +17,20 @@ contextBridge.exposeInMainWorld('api', {
   onDismiss: (cb) => ipcRenderer.on('toast-dismiss', () => cb()),
   size: (h) => ipcRenderer.send('toast-size', h),
   action: (a) => ipcRenderer.send('toast-action', a),
-  close: () => ipcRenderer.send('toast-close')
+  close: () => ipcRenderer.send('toast-close'),
+
+  // floating shortcut
+  floating: {
+    startDrag: (pos) => ipcRenderer.send('floating:drag-start', pos),
+    moveDrag: (pos) => ipcRenderer.send('floating:drag-move', pos),
+    endDrag: () => ipcRenderer.send('floating:drag-end'),
+    expand: () => ipcRenderer.send('floating:expand'),
+    onDeleteHover: (cb) => ipcRenderer.on('floating:delete-hover', (_e, h) => cb(h)),
+    onDeleteAnimate: (cb) => ipcRenderer.on('floating:delete-animate', () => cb()),
+    onPopIn: (cb) => ipcRenderer.on('floating:pop-in', () => cb())
+  },
+  onDeleteHoverState: (cb) => ipcRenderer.on('delete:hover-state', (_e, h) => cb(h)),
+  getFloatingState: () => ipcRenderer.invoke('floating:get'),
+  toggleFloating: (enabled) => ipcRenderer.invoke('floating:toggle', enabled),
+  onFloatingChanged: (cb) => ipcRenderer.on('floating:changed', (_e, s) => cb(s))
 });

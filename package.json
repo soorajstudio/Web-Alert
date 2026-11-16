@@ -12,6 +12,6 @@
     "artifactName": "PopNotify-Setup-${version}.exe",
     "win": { "target": "nsis", "icon": "assets/icon.png" },
     "nsis": { "oneClick": true, "perMachine": false, "runAfterFinish": true, "createDesktopShortcut": true, "createStartMenuShortcut": true },
-    "files": ["main.js", "preload.js", "index.html", "toast.html", "sounds.js", "assets/**"]
+    "files": ["main.js", "preload.js", "index.html", "toast.html", "floating.html", "delete.html", "sounds.js", "assets/**"]
   }
 }

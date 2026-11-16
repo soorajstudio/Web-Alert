@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#btn-wrap {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+#btn-wrap.dragging {
+  cursor: grabbing;
+  transform: scale(1.12);
+}
+
+#btn-wrap.over-delete {
+  transform: scale(0.9) !important;
+  filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.95)) hue-rotate(-50deg);
+}
+
+.glow-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%);
+  animation: pulseGlow 3s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(0.95); opacity: 0.4; }
+  100% { transform: scale(1.15); opacity: 0.85; }
+}
+
+.circle-btn {
+  position: relative;
+  z-index: 1;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #2b2826 0%, #171614 100%);
+  border: 1.8px solid rgba(245, 158, 11, 0.7);
+  box-shadow:
+    0 8px 24px -4px rgba(0, 0, 0, 0.8),
+    0 0 14px rgba(245, 158, 11, 0.3),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fbbf24;
+  transition: all 0.2s ease;
+}
+
+#btn-wrap:hover .circle-btn {
+  border-color: rgba(245, 158, 11, 0.95);
+  box-shadow:
+    0 10px 28px -2px rgba(0, 0, 0, 0.9),
+    0 0 22px rgba(245, 158, 11, 0.55),
+    inset 0 1px 2px rgba(255, 255, 255, 0.35);
+  transform: scale(1.04);
+}
+
+.bell-icon {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: #fbbf24;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  transition: transform 0.2s ease;
+}
+
+#btn-wrap:hover .bell-icon {
+  transform: rotate(-12deg) scale(1.08);
+}
+
+.badge-dot {
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1.5px solid #1c1917;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+}
+
+/* Animations */
+.anim-pop-in {
+  animation: popIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.anim-expand {
+  animation: expandOut 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes expandOut {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.45); opacity: 0; }
+}
+
+.anim-delete {
+  animation: deleteVortex 0.35s cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
+}
+
+@keyframes deleteVortex {
+  0% { transform: scale(1) rotate(0); opacity: 1; filter: hue-rotate(0); }
+  50% { transform: scale(0.6) rotate(140deg); opacity: 0.8; filter: hue-rotate(-60deg); }
+  100% { transform: scale(0) rotate(360deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="btn-wrap" class="anim-pop-in" title="Double-click to expand | Drag to move">
+  <div class="glow-ring"></div>
+  <div class="circle-btn">
+    <svg class="bell-icon" viewBox="0 0 24 24">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+    </svg>
+    <div class="badge-dot"></div>
+  </div>
+</div>
+
+<script>
+const wrap = document.getElementById('btn-wrap');
+let isDragging = false;
+let startX = 0, startY = 0;
+let moved = false;
+
+wrap.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return;
+  isDragging = true;
+  moved = false;
+  startX = e.screenX;
+  startY = e.screenY;
+  wrap.classList.add('dragging');
+  window.api.floating.startDrag({ screenX: e.screenX, screenY: e.screenY });
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  const dx = e.screenX - startX;
+  const dy = e.screenY - startY;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+    moved = true;
+  }
+  window.api.floating.moveDrag({ screenX: e.screenX, screenY: e.screenY });
+});
+
+window.addEventListener('mouseup', () => {
+  if (!isDragging) return;
+  isDragging = false;
+  wrap.classList.remove('dragging');
+  wrap.classList.remove('over-delete');
+  window.api.floating.endDrag();
+});
+
+// Double-click to expand application
+wrap.addEventListener('dblclick', (e) => {
+  e.preventDefault();
+  wrap.className = 'anim-expand';
+  setTimeout(() => {
+    window.api.floating.expand();
+  }, 200);
+});
+
+// Delete target hover feedback
+window.api.floating.onDeleteHover((over) => {
+  wrap.classList.toggle('over-delete', !!over);
+});
+
+// Delete vortex animation
+window.api.floating.onDeleteAnimate(() => {
+  wrap.className = 'anim-delete';
+});
+
+// Pop-in animation when reappearing from minimize
+window.api.floating.onPopIn(() => {
+  wrap.className = 'anim-pop-in';
+});
+</script>
+
+</body>
+</html>

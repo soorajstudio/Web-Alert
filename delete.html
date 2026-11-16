@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', Roboto, sans-serif;
+}
+
+#del-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 22px;
+  border-radius: 40px;
+  background: rgba(24, 20, 20, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(239, 68, 68, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.75), 0 0 16px rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(35px) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+#del-pill.hovered {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  border-color: #fee2e2;
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.85), 0 0 32px rgba(239, 68, 68, 0.95);
+  color: #ffffff;
+  transform: scale(1.12);
+}
+
+.trash-box {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.trash-svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  transition: transform 0.2s ease;
+}
+
+#del-pill.hovered .trash-svg {
+  transform: scale(1.15) rotate(-6deg);
+}
+
+.del-text {
+  transition: all 0.15s ease;
+}
+</style>
+</head>
+<body>
+
+<div id="del-pill">
+  <div class="trash-box">
+    <svg class="trash-svg" viewBox="0 0 24 24">
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      <line x1="10" y1="11" x2="10" y2="17"></line>
+      <line x1="14" y1="11" x2="14" y2="17"></line>
+    </svg>
+  </div>
+  <span class="del-text" id="del-text">Drag here to delete</span>
+</div>
+
+<script>
+const pill = document.getElementById('del-pill');
+const text = document.getElementById('del-text');
+
+if (window.api && window.api.onDeleteHoverState) {
+  window.api.onDeleteHoverState((isHovered) => {
+    pill.classList.toggle('hovered', isHovered);
+    text.textContent = isHovered ? 'Release to Remove' : 'Drag here to delete';
+  });
+}
+</script>
+
+</body>
+</html>

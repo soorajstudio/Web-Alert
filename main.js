@@ -17,6 +17,12 @@ let db = {
     style: 'capsule',
     position: 'center',
     nextFire: 0
+  },
+  floatingShortcut: {
+    enabled: true,
+    autoMinimize: true,
+    x: null,
+    y: null
   }
 };
 let mainWin, tray, quitting = false;
@@ -29,6 +35,9 @@ function loadDb() {
     const raw = JSON.parse(fs.readFileSync(dbFile(), 'utf8'));
     db = { ...db, ...raw, eyeRest: { ...db.eyeRest, ...(raw.eyeRest || {}) } };
     if (db.eyeRest && db.eyeRest.style !== 'island') db.eyeRest.style = 'capsule';
+    if (!db.floatingShortcut) {
+      db.floatingShortcut = { enabled: true, autoMinimize: true, x: null, y: null };
+    }
     if (Array.isArray(db.alarms)) {
       db.alarms.forEach(a => { if (a.style !== 'island') a.style = 'capsule'; });
     }
@@ -216,12 +225,191 @@ ipcMain.handle('alarms:toggle', (_e, id, on) => {
   saveDb(); return db.alarms;
 });
 
+
+/* ---------- floating shortcut & delete overlay ---------- */
+let floatingWin = null, deleteWin = null;
+let isDraggingFloating = false, dragOffset = { x: 0, y: 0 };
+let isOverDeleteTarget = false;
+
+function getFloatingDefaultPos() {
+  const wa = screen.getPrimaryDisplay().workArea;
+  const x = db.floatingShortcut && db.floatingShortcut.x != null ? db.floatingShortcut.x : (wa.x + wa.width - 76 - 24);
+  const y = db.floatingShortcut && db.floatingShortcut.y != null ? db.floatingShortcut.y : (wa.y + wa.height - 76 - 36);
+  return {
+    x: Math.max(wa.x, Math.min(wa.x + wa.width - 76, x)),
+    y: Math.max(wa.y, Math.min(wa.y + wa.height - 76, y))
+  };
+}
+
+function createFloatingWindow() {
+  if (floatingWin && !floatingWin.isDestroyed()) return floatingWin;
+  const pos = getFloatingDefaultPos();
+  floatingWin = new BrowserWindow({
+    width: 76,
+    height: 76,
+    x: pos.x,
+    y: pos.y,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    show: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true
+    }
+  });
+  floatingWin.setAlwaysOnTop(true, 'screen-saver');
+  floatingWin.loadFile('floating.html');
+  return floatingWin;
+}
+
+function createDeleteWindow() {
+  if (deleteWin && !deleteWin.isDestroyed()) return deleteWin;
+  const wa = screen.getPrimaryDisplay().workArea;
+  deleteWin = new BrowserWindow({
+    width: 240,
+    height: 84,
+    x: Math.round(wa.x + (wa.width - 240) / 2),
+    y: Math.round(wa.y + wa.height - 90),
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    show: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true
+    }
+  });
+  deleteWin.setAlwaysOnTop(true, 'screen-saver');
+  deleteWin.loadFile('delete.html');
+  return deleteWin;
+}
+
+function showFloatingShortcut() {
+  if (!db.floatingShortcut || !db.floatingShortcut.enabled) return;
+  const win = createFloatingWindow();
+  const pos = getFloatingDefaultPos();
+  win.setPosition(pos.x, pos.y);
+  win.showInactive();
+  if (win.webContents) win.webContents.send('floating:pop-in');
+}
+
+function hideFloatingShortcut() {
+  if (floatingWin && !floatingWin.isDestroyed()) floatingWin.hide();
+  if (deleteWin && !deleteWin.isDestroyed()) deleteWin.hide();
+}
+
+ipcMain.on('floating:drag-start', (_e, pos) => {
+  if (!floatingWin || floatingWin.isDestroyed()) return;
+  isDraggingFloating = true;
+  isOverDeleteTarget = false;
+  const [winX, winY] = floatingWin.getPosition();
+  dragOffset = { x: pos.screenX - winX, y: pos.screenY - winY };
+
+  const display = screen.getDisplayNearestPoint({ x: pos.screenX, y: pos.screenY });
+  const wa = display.workArea;
+  const dWin = createDeleteWindow();
+  dWin.setBounds({
+    x: Math.round(wa.x + (wa.width - 240) / 2),
+    y: Math.round(wa.y + wa.height - 90),
+    width: 240,
+    height: 84
+  });
+  dWin.showInactive();
+  if (dWin.webContents) dWin.webContents.send('delete:hover-state', false);
+});
+
+ipcMain.on('floating:drag-move', (_e, pos) => {
+  if (!isDraggingFloating || !floatingWin || floatingWin.isDestroyed()) return;
+  const newX = pos.screenX - dragOffset.x;
+  const newY = pos.screenY - dragOffset.y;
+  floatingWin.setPosition(newX, newY);
+
+  if (deleteWin && !deleteWin.isDestroyed()) {
+    const delBounds = deleteWin.getBounds();
+    const over = (
+      pos.screenX >= delBounds.x - 20 &&
+      pos.screenX <= delBounds.x + delBounds.width + 20 &&
+      pos.screenY >= delBounds.y - 25 &&
+      pos.screenY <= delBounds.y + delBounds.height + 30
+    );
+    if (over !== isOverDeleteTarget) {
+      isOverDeleteTarget = over;
+      deleteWin.webContents.send('delete:hover-state', over);
+      floatingWin.webContents.send('floating:delete-hover', over);
+    }
+  }
+});
+
+ipcMain.on('floating:drag-end', () => {
+  if (!isDraggingFloating) return;
+  isDraggingFloating = false;
+
+  if (isOverDeleteTarget) {
+    if (floatingWin && !floatingWin.isDestroyed()) {
+      floatingWin.webContents.send('floating:delete-animate');
+    }
+    setTimeout(() => {
+      hideFloatingShortcut();
+      db.floatingShortcut.enabled = false;
+      saveDb();
+      if (mainWin && !mainWin.isDestroyed()) {
+        mainWin.webContents.send('floating:changed', db.floatingShortcut);
+      }
+      buildTray();
+    }, 320);
+  } else {
+    if (deleteWin && !deleteWin.isDestroyed()) deleteWin.hide();
+
+    if (floatingWin && !floatingWin.isDestroyed()) {
+      const [curX, curY] = floatingWin.getPosition();
+      const display = screen.getDisplayNearestPoint({ x: curX + 38, y: curY + 38 });
+      const wa = display.workArea;
+
+      const dLeft = (curX + 38) - wa.x;
+      const dRight = (wa.x + wa.width) - (curX + 38);
+
+      let snappedX = dLeft < dRight ? (wa.x + 14) : (wa.x + wa.width - 76 - 14);
+      const snappedY = Math.max(wa.y + 14, Math.min(wa.y + wa.height - 76 - 14, curY));
+
+      floatingWin.setPosition(snappedX, snappedY);
+      db.floatingShortcut.x = snappedX;
+      db.floatingShortcut.y = snappedY;
+      saveDb();
+    }
+  }
+});
+
+ipcMain.on('floating:expand', () => {
+  showMain();
+});
+
+ipcMain.handle('floating:get', () => db.floatingShortcut || { enabled: true, autoMinimize: true });
+ipcMain.handle('floating:toggle', (_e, on) => {
+  if (!db.floatingShortcut) db.floatingShortcut = { enabled: true, autoMinimize: true };
+  db.floatingShortcut.enabled = !!on;
+  saveDb();
+  if (db.floatingShortcut.enabled) {
+    if (!mainWin || !mainWin.isVisible()) showFloatingShortcut();
+  } else {
+    hideFloatingShortcut();
+  }
+  buildTray();
+  return db.floatingShortcut;
+});
+
 /* ---------- main window / tray ---------- */
 function createWindow(hidden) {
   mainWin = new BrowserWindow({
-    width: 940, height: 720, minWidth: 520, minHeight: 420, show: false, title: 'PopNotify',
-    backgroundColor: '#2b2826', autoHideMenuBar: true,
-    titleBarStyle: 'hidden', titleBarOverlay: { color: '#2b2826', symbolColor: '#ffffff', height: 36 },
+    width: 1040, height: 680, minWidth: 900, minHeight: 600, show: false, title: 'PopNotify',
+    backgroundColor: '#f1f5f9', autoHideMenuBar: true,
+    titleBarStyle: 'hidden', titleBarOverlay: { color: '#f1f5f9', symbolColor: '#0f172a', height: 48 },
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, autoplayPolicy: 'no-user-gesture-required' }
   });
@@ -230,14 +418,38 @@ function createWindow(hidden) {
   mainWin.once('ready-to-show', () => { if (!hidden) mainWin.show(); });
   mainWin.on('close', (e) => {
     if (quitting) return;
-    e.preventDefault(); mainWin.hide();
+    e.preventDefault();
+    mainWin.hide();
+    if (db.floatingShortcut && db.floatingShortcut.enabled) {
+      showFloatingShortcut();
+    }
     if (!db.hintShown) {
       db.hintShown = true; saveDb();
-      showToast({ title: 'Still running in the background', description: 'Your alarms will keep working. Use the tray icon to open or quit PopNotify.', sound: 'none' });
+      showToast({ title: 'Still running in the background', description: 'Your alarms will keep working. Use the floating shortcut or tray icon to open.', sound: 'none' });
     }
   });
+
+  // Auto-minimize when clicking outside the application
+  mainWin.on('blur', () => {
+    if (quitting) return;
+    if (!db.floatingShortcut || !db.floatingShortcut.enabled || !db.floatingShortcut.autoMinimize) return;
+    setTimeout(() => {
+      if (mainWin && !mainWin.isDestroyed() && !mainWin.isFocused() && mainWin.isVisible()) {
+        mainWin.hide();
+        showFloatingShortcut();
+      }
+    }, 150);
+  });
 }
-function showMain() { if (!mainWin || mainWin.isDestroyed()) createWindow(false); else { mainWin.show(); mainWin.focus(); } }
+function showMain() {
+  hideFloatingShortcut();
+  if (!mainWin || mainWin.isDestroyed()) {
+    createWindow(false);
+  } else {
+    mainWin.show();
+    mainWin.focus();
+  }
+}
 function applyAutoStart() {
   if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: !!db.autoStart, args: ['--hidden'] });
 }
@@ -247,6 +459,24 @@ function buildTray() {
     tray.setToolTip('PopNotify');
     const menu = () => Menu.buildFromTemplate([
       { label: 'Open PopNotify', click: showMain },
+      {
+        label: 'Floating Shortcut',
+        type: 'checkbox',
+        checked: !!(db.floatingShortcut && db.floatingShortcut.enabled),
+        click: (i) => {
+          if (!db.floatingShortcut) db.floatingShortcut = { enabled: true, autoMinimize: true };
+          db.floatingShortcut.enabled = i.checked;
+          saveDb();
+          if (db.floatingShortcut.enabled) {
+            if (!mainWin || !mainWin.isVisible()) showFloatingShortcut();
+          } else {
+            hideFloatingShortcut();
+          }
+          if (mainWin && !mainWin.isDestroyed()) {
+            mainWin.webContents.send('floating:changed', db.floatingShortcut);
+          }
+        }
+      },
       { label: 'Start with Windows', type: 'checkbox', checked: !!db.autoStart, click: (i) => { db.autoStart = i.checked; saveDb(); applyAutoStart(); } },
       { type: 'separator' },
       { label: 'Quit', click: () => { quitting = true; app.quit(); } }
